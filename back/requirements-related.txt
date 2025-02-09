@@ -1,0 +1,15 @@
+# Create a virtual environment 
+python3 -m venv .venv
+# Activate it 
+source .venv/bin/activate 
+# Check if the env is activated 
+which python
+# deactivate env
+deactivate 
+
+# Create a text file containing all packages in the virtual env 
+pip freeze > requirements.txt 
+
+# Install all packages 
+pip install -r path/to/requirements.txt
+
