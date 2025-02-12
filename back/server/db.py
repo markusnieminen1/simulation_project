@@ -54,7 +54,7 @@ class DB_Connection:
             if self.connection:
                 self.connection.close()
         
-    def insert_data(self, table_name: str, data_to_db: list) -> None:
+    def insert_data(self, table_name: str, data_to_db: list) -> bool:
         """ # Description
         Takes the keys from the first dict on the list to use as columns. 
         Then parses the values into tuples that are sent to the db using cursor.executemany()/execute()
@@ -70,7 +70,6 @@ class DB_Connection:
                                 where the keys (and the dict lenghts) are identical to eachother. 
                                 
         """
-        # TODO list index out of range error when data_to_db len is 1
         try:
             columns = list(iter(data_to_db[0])) # keys from the first dict
             columns_str = ', '.join(columns) # str for the sql query
@@ -87,11 +86,13 @@ class DB_Connection:
             if len(values) > 1: # executemany for multiple tuples
                 self.cursor.executemany(sql_insert, values)
             else:
-                self.cursor.execute(sql_insert, values)
+                self.cursor.execute(sql_insert, values[0])
             self.connection.commit()
+            return True
             
         except Exception as e:
             print(f"Failed to insert data into {table_name}: {e}")
+            return False
     
     def fetch_password_hash(self, user_email:str) -> Optional[str]:
         """ # Description

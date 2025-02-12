@@ -27,8 +27,8 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
-    username: str = None
+class RefreshToken(Token):
+    refresh_token: str
 
 class User(BaseModel):
     username: str
@@ -94,4 +94,8 @@ def create_access_jwt(data: dict):
     return encoded_jwt
 
 def create_refresh_jwt(data: dict):
-    pass
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXP_DAY)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(payload=to_encode, key=REFRESH_SECRET_KEY, algorithm=TOKEN_ALGORITHM)
+    return encoded_jwt
