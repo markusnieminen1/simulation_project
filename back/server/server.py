@@ -1,6 +1,7 @@
 # The actual API 
 from fastapi import FastAPI, Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
 from auth import create_access_jwt, create_refresh_jwt, Token, RefreshToken, authenticate_user, get_password_hash, get_user
 from db import DB_Connection
 from typing import Annotated
@@ -17,6 +18,14 @@ TOKEN_ALGORITHM = getenv('algorithm')
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=[True],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 db = DB_Connection()
 
 
@@ -37,18 +46,20 @@ async def login_for_tokens(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_jwt(data={"sub": user.username})
-    refresh_token = create_refresh_jwt(data={"sub": user.username})
+    sim_ids = None
+    if user.simulation_ids:
+        sim_ids = user.simulation_ids
+    access_token = create_access_jwt(data={"sub": user.username, "simulation_ids": sim_ids})
+    refresh_token = create_refresh_jwt(data={"sub": user.username, "simulation_ids": sim_ids})
     
     return RefreshToken(access_token=access_token, token_type="Bearer", refresh_token=refresh_token)
     
 
 @app.post("/login/refresh")
 async def access_token_refresh(refresh_token:str):
-    
     pass
 
-@app.post("/register", status_code=status.HTTP_201_CREATED)
+@app.post("/register", status_code=status.HTTP_201_CREATED, response_model=RefreshToken)
 async def register_user(form_data: 
             Annotated[OAuth2PasswordRequestForm, Depends()]):
     
@@ -70,7 +81,14 @@ async def register_user(form_data:
                     detail="Error while inserting user data",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
-    return {"message": "User registered successfully"}
+    user = authenticate_user(form_data.username, form_data.password)
+    sim_ids = None
+    if user.simulation_ids:
+        sim_ids = user.simulation_ids
+    access_token = create_access_jwt(data={"sub": user.username, "simulation_ids": sim_ids})
+    refresh_token = create_refresh_jwt(data={"sub": user.username, "simulation_ids": sim_ids})
+    
+    return RefreshToken(access_token=access_token, token_type="Bearer", refresh_token=refresh_token)
             
 
 async def get_current_user(access_token: str = Depends(oauth2_scheme)):
@@ -98,4 +116,4 @@ async def protected_route(user: str = Depends(get_current_user)):
 
 
 if __name__ == "__main__":
-    run("server:app", host='0.0.0.0' ,port=8000, reload=True, access_log=False)
+    run("server:app", host='0.0.0.0' ,port=8000, reload=True, access_log=True)
