@@ -1,7 +1,13 @@
 # Create a virtual environment 
 python3 -m venv .venv
 # Activate it 
-source .venv/bin/activate 
+
+# Mac
+source .venv/bin/activate
+
+# Windows
+call .venv/Scripts/activate
+
 # Check if the env is activated 
 which python
 # deactivate env
